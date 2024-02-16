@@ -1,11 +1,9 @@
 import streamlit as st
 import boto3
 from io import BytesIO
-import os
 
-def get_file_extension(file_path):
-    _, file_extension = os.path.splitext(file_path)
-    return file_extension
+from PIL import Image
+
 
 # AWS credentials
 AWS_ACCESS_KEY_ID = "AKIA6ODU77IO5BEWVLND"
@@ -30,12 +28,18 @@ def download_from_s3(file_name):
     return obj['Body'].read()
 
 def main():
-    st.title("Document Translation System")
+    # Define image URL
+    image_url = "rsz_qucoonlogo.png"
 
+    # Display the image
+    st.image(image_url)
+
+    st.title("Document Translation System")
+    
     # File upload
     uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
     if uploaded_file is not None:
-        file_extension = get_file_extension(uploaded_file.name)
+
         # Source language selection (Radio drop-down for French and English)
         source_lang = st.radio("Select source language:", ['French', 'English'])
         if source_lang == 'French':
