@@ -1,6 +1,11 @@
 import streamlit as st
 import boto3
 from io import BytesIO
+import os
+
+def get_file_extension(file_path):
+    _, file_extension = os.path.splitext(file_path)
+    return file_extension
 
 # AWS credentials
 AWS_ACCESS_KEY_ID = "AKIA6ODU77IO5BEWVLND"
@@ -29,8 +34,8 @@ def main():
 
     # File upload
     uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
-
     if uploaded_file is not None:
+        file_extension = get_file_extension(uploaded_file.name)
         # Source language selection (Radio drop-down for French and English)
         source_lang = st.radio("Select source language:", ['French', 'English'])
         if source_lang == 'French':
@@ -50,10 +55,11 @@ def main():
             st.success(f"Document '{file_name}' uploaded successfully!")
 
     # Download button
-    download_file_name = st.text_input("Enter the document name to download from S3:")
-    if st.button("Download from S3"):
-        if download_file_name:
-            # Download the document from S3
+    #download_file_name = st.text_input("Enter the document name to download from S3:")
+        download_file_name = f"{target_ext}{uploaded_file.name}"
+        print(download_file_name)
+        if st.button("Download from S3"):
+                    # Download the document from S3
             downloaded_content = download_from_s3(download_file_name)
             st.download_button(label="Download Processed Document", data=downloaded_content, file_name=download_file_name)
 

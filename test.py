@@ -1,14 +1,21 @@
+import streamlit as st
+import os
 
-decoded_key = "en|fr|name.docx"
+def get_file_extension(file_path):
+    _, file_extension = os.path.splitext(file_path)
+    return file_extension
 
-split_name = decoded_key.split(".")
-extension = split_name[-1]
-name_desc = split_name[0].split('|')
-print(split_name)
-print(extension,name_desc)
-file_name = name_desc[2]
-source_language = name_desc[0]
-target_language = name_desc[1]
-print(file_name,source_language,target_language)
-file_name = file_name+target_language+'.'+extension
-print(file_name)
+def main():
+    st.title("File Extension Extractor")
+
+    uploaded_file = st.file_uploader("Upload a file", type=["txt", "csv", "xlsx", "pdf","docx"])
+
+    if uploaded_file is not None:
+        st.write("File Uploaded!")
+
+        # Get and display the file extension
+        file_extension = get_file_extension(uploaded_file.name)
+        st.write(f"File Extension: {file_extension}")
+
+if __name__ == "__main__":
+    main()
