@@ -19,12 +19,16 @@ s3_input = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_ac
 s3_output = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY, region_name=AWS_REGION)
 
 def upload_to_s3(file, source_lang, target_lang):
-    file_name = f"{source_lang}|{target_lang}|{file.name}"
+    uploaded_file_name = file.name
+    uploaded_file_name = uploaded_file_name.replace(" ","_")
+    file_name = f"{source_lang}|{target_lang}|{uploaded_file_name}"
     s3_input.upload_fileobj(file, INPUT_S3_BUCKET_NAME, file_name)
     return file_name
 
 def download_from_s3(file_name):
-    obj = s3_output.get_object(Bucket=OUTPUT_S3_BUCKET_NAME, Key=file_name)
+    download_file_name = file_name
+    download_file_name = download_file_name.replace(" ","_")
+    obj = s3_output.get_object(Bucket=OUTPUT_S3_BUCKET_NAME, Key=download_file_name)
     return obj['Body'].read()
 
 def main():
@@ -38,6 +42,7 @@ def main():
     
     # File upload
     uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx", "txt"])
+    
     if uploaded_file is not None:
 
         # Source language selection (Radio drop-down for French and English)
