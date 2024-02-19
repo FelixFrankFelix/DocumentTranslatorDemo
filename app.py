@@ -1,7 +1,7 @@
 import streamlit as st
 import boto3
 from io import BytesIO
-
+from botocore.exceptions import ClientError
 from PIL import Image
 
 
@@ -28,8 +28,12 @@ def upload_to_s3(file, source_lang, target_lang):
 def download_from_s3(file_name):
     download_file_name = file_name
     download_file_name = download_file_name.replace(" ","_")
-    obj = s3_output.get_object(Bucket=OUTPUT_S3_BUCKET_NAME, Key=download_file_name)
-    return obj['Body'].read()
+    try:
+        obj = s3_output.get_object(Bucket=OUTPUT_S3_BUCKET_NAME, Key=download_file_name)
+        return obj['Body'].read()
+    except: 
+        return None
+
 
 def main():
     # Define image URL
@@ -67,10 +71,13 @@ def main():
     #download_file_name = st.text_input("Enter the document name to download from S3:")
         download_file_name = f"{target_ext}{uploaded_file.name}"
         print(download_file_name)
-        if st.button("Download from S3"):
-                    # Download the document from S3
+        if st.button("Process Download"):
             downloaded_content = download_from_s3(download_file_name)
-            st.download_button(label="Download Processed Document", data=downloaded_content, file_name=download_file_name)
-
+            print(downloaded_content)
+            if downloaded_content is not None:
+                    st.download_button(label="Download Processed Document", data=downloaded_content, file_name=download_file_name)
+            else:
+                st.error(f"Failed to download the document. Please reload the document and ensure it's not too large.")
+            
 if __name__ == "__main__":
     main()
