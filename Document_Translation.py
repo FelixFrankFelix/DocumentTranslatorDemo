@@ -2,7 +2,11 @@ import boto3
 import base64
 from urllib.parse import unquote
 
-def translate_document(source_bucket, source_key, target_bucket, target_key, source_language, target_language, content_type):
+def split_document(content, max_chunk_size):
+    chunks = [content[i:i + max_chunk_size] for i in range(0, len(content), max_chunk_size)]
+    return chunks
+
+def translate_document_chunks(source_bucket, source_key, target_bucket, target_key, source_language, target_language, content_type, max_chunk_size = 102400):
     # Initialize AWS Translate client
     translate_client = boto3.client('translate')
 
@@ -11,38 +15,41 @@ def translate_document(source_bucket, source_key, target_bucket, target_key, sou
 
     # Get the content of the document from the source S3 bucket
     response = s3_client.get_object(Bucket=source_bucket, Key=source_key)
-    content = response['Body'].read()
-    print(content)
-    # Encode the content using base64
-    #encoded_content = base64.b64encode(content)
+    content = response['Body'].read().decode('utf-8')
 
-    # Specify the content type based on the document format (e.g., 'text/plain' or 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    # Split the content into smaller chunks
+    content_chunks = split_document(content, max_chunk_size)
+
+    translated_chunks = []
+
+    # Specify the content type based on the document format
     if content_type == 'txt':
         content_type = 'text/plain'
-    if content_type == 'doc' or content_type == 'docx':
+    elif content_type == 'doc' or content_type == 'docx':
         content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
-    # Set up the translation request
-    translation_request = {
-        'Document': {
-            'Content': content,
-            'ContentType': content_type
-        },
-        'SourceLanguageCode': source_language,
-        'TargetLanguageCode': target_language,
-        
-    }
+    for chunk in content_chunks:
+        # Set up the translation request for each chunk
+        translation_request = {
+            'Document': {
+                'Content': chunk,
+                'ContentType': content_type
+            },
+            'SourceLanguageCode': source_language,
+            'TargetLanguageCode': target_language,
+        }
 
-    # Perform the translation
-    translation_response = translate_client.translate_document(**translation_request)
+        # Perform the translation for each chunk
+        translation_response = translate_client.translate_document(**translation_request)
 
-    # Get the translated content
-    #translated_content = base64.b64decode(translation_response['TranslatedDocument']['Content'])
-    translated_content = translation_response['TranslatedDocument']['Content']
-    print(translation_response)
-    
+        # Get the translated content for each chunk
+        translated_chunks.append(translation_response['TranslatedDocument']['Content'])
+
+    # Combine translated chunks into a single translated document
+    translated_document = ''.join(translated_chunks)
+
     # Upload the translated content to the target S3 bucket
-    s3_client.put_object(Bucket=target_bucket, Key=target_key, Body=translated_content)
+    s3_client.put_object(Bucket=target_bucket, Key=target_key, Body=translated_document.encode('utf-8'))
     print("Translated", target_key)
 
 def lambda_handler(event, context):
@@ -71,4 +78,4 @@ def lambda_handler(event, context):
     
     # Translate the document and store the result in the target S3 bucket
     print(file_name)
-    translate_document(source_bucket, decoded_key, target_bucket, target_key, source_language=source_language, target_language=target_language,content_type=extension)
+    translate_document_chunks(source_bucket, decoded_key, target_bucket, target_key, source_language=source_language, target_language=target_language,content_type=extension)
