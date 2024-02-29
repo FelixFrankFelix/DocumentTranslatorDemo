@@ -70,20 +70,14 @@ def main():
     # Download button
     #download_file_name = st.text_input("Enter the document name to download from S3:")
         download_file_name = f"{target_ext}{uploaded_file.name}"
-        print(download_file_name)
-        if st.button("Process Download"):
-            try_count = 0
-            max_try = 5
-            while try_count < max_try:
-                downloaded_content, error_message = download_from_s3(download_file_name)
-                if downloaded_content is not None:
-                    st.download_button(label="Download Processed Document", data=downloaded_content, file_name=download_file_name)
-                    break
-                else:
-                    try_count += 1
-                    st.warning(f"Attempt {try_count} failed. {error_message}")
 
-            if try_count >= max_try:
-                st.error(f"Failed to download the document after {max_try} attempts. Please reload the document and ensure it's not too large.")
+        if st.button("Process Download"):
+            downloaded_content = download_from_s3(download_file_name)
+            print(downloaded_content)
+            if downloaded_content is not None:
+                    st.download_button(label="Download Processed Document", data=downloaded_content, file_name=download_file_name)
+            else:
+                st.error(f"Failed to download the document. Please reload the document and ensure it's not too large.")
+            
 if __name__ == "__main__":
     main()
